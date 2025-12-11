@@ -76,8 +76,8 @@ impl<'a> Widget for ConfigPage<'a> {
             .collect::<Vec<_>>();
         let inner = block.inner(area);
         let inner = Rect {
-            x: inner.x + 1,
-            width: inner.width - 1,
+            x: inner.x.saturating_add(1),
+            width: inner.width.saturating_sub(1),
             ..inner
         };
         block.render(area, buf);

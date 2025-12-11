@@ -54,7 +54,7 @@ impl<'a> TuiStates<'a> {
     pub fn handle(&mut self, event: Event) -> TuiResult<Option<Action>> {
         self.all_events_recv += 1;
         if self.debug_state.len() >= 300 {
-            let _ = self.drop_events(100);
+            self.debug_state.drain(..100).for_each(drop);
         }
         self.debug_state.push(event.to_owned());
 
@@ -104,6 +104,10 @@ impl<'a> TuiStates<'a> {
             }
             UpdateEvent::Version(version) => self.version = Some(version),
             UpdateEvent::Traffic(traffic) => {
+                const MAX_TRAFFIC_POINTS: usize = 1000;
+                if self.traffics.len() >= MAX_TRAFFIC_POINTS {
+                    self.traffics.drain(..100);
+                }
                 let Traffic { up, down } = traffic;
                 self.max_traffic.up = self.max_traffic.up.max(up);
                 self.max_traffic.down = self.max_traffic.down.max(down);
@@ -114,7 +118,12 @@ impl<'a> TuiStates<'a> {
                 new_tree.sort_groups_with_frequency(&self.rule_freq);
                 self.proxy_tree.replace_with(new_tree);
             }
-            UpdateEvent::Log(log) => self.log_state.push(log),
+            UpdateEvent::Log(log) => {
+                if self.log_state.len() >= 500 {
+                    self.log_state.drain(..100);
+                }
+                self.log_state.push(log)
+            }
             UpdateEvent::Rules(rules) => {
                 self.rule_freq = rules.owned_frequency();
                 self.rule_state.sorted_merge(rules.rules);

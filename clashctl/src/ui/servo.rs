@@ -73,21 +73,34 @@ fn req_job(_opt: &TuiOpt, _flags: &Flags, tx: Sender<Event>, clash: &Clash) -> T
 
     loop {
         if version_pulse.tick() {
-            tx.send(Event::Update(UpdateEvent::Version(clash.get_version()?)))?;
+            match clash.get_version() {
+                Ok(version) => { let _ = tx.send(Event::Update(UpdateEvent::Version(version))); }
+                Err(e) => warn!("Failed to get version: {:?}", e),
+            }
         }
         if connection_pulse.tick() {
-            tx.send(Event::Update(UpdateEvent::Connection(
-                clash.get_connections()?.into(),
-            )))?;
+            match clash.get_connections() {
+                Ok(conn) => { let _ = tx.send(Event::Update(UpdateEvent::Connection(conn.into()))); }
+                Err(e) => warn!("Failed to get connections: {:?}", e),
+            }
         }
         if rules_pulse.tick() {
-            tx.send(Event::Update(UpdateEvent::Rules(clash.get_rules()?)))?;
+            match clash.get_rules() {
+                Ok(rules) => { let _ = tx.send(Event::Update(UpdateEvent::Rules(rules))); }
+                Err(e) => warn!("Failed to get rules: {:?}", e),
+            }
         }
         if proxies_pulse.tick() {
-            tx.send(Event::Update(UpdateEvent::Proxies(clash.get_proxies()?)))?;
+            match clash.get_proxies() {
+                Ok(proxies) => { let _ = tx.send(Event::Update(UpdateEvent::Proxies(proxies))); }
+                Err(e) => warn!("Failed to get proxies: {:?}", e),
+            }
         }
         if config_pulse.tick() {
-            tx.send(Event::Update(UpdateEvent::Config(clash.get_configs()?)))?;
+            match clash.get_configs() {
+                Ok(config) => { let _ = tx.send(Event::Update(UpdateEvent::Config(config))); }
+                Err(e) => warn!("Failed to get config: {:?}", e),
+            }
         }
         interval.tick();
     }
