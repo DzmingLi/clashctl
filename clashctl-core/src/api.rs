@@ -159,7 +159,7 @@ impl Clash {
     ///
     /// # Examplel
     ///
-    /// ```rust
+    /// ```rust,no_run
     /// # use clashctl_core::{ Clash, model::Traffic }; use std::env;
     /// # fn main() {
     /// # let clash = Clash::builder(env::var("PROXY_ADDR").unwrap()).unwrap().build();
