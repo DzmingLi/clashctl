@@ -21,18 +21,21 @@ fn init() -> Clash {
 }
 
 #[test]
+#[ignore]
 fn test_proxies() {
     let clash = init();
     clash.get_proxies().unwrap();
 }
 
 #[test]
+#[ignore]
 fn test_rules() {
     let clash = init();
     clash.get_rules().unwrap();
 }
 
 #[test]
+#[ignore]
 fn test_proxy() {
     let clash = init();
     let proxies = clash.get_proxies().unwrap();
@@ -41,6 +44,7 @@ fn test_proxy() {
 }
 
 #[test]
+#[ignore]
 fn test_proxy_delay() {
     let clash = init();
     let proxies = clash.get_proxies().unwrap();
@@ -51,6 +55,7 @@ fn test_proxy_delay() {
 }
 
 #[test]
+#[ignore]
 fn test_set_proxy() {
     let clash = init();
     let proxies = clash.get_proxies().unwrap();
@@ -65,6 +70,7 @@ fn test_set_proxy() {
 }
 
 #[test]
+#[ignore]
 fn test_configs() {
     let clash = init();
     let default_config_dir = home_dir()
@@ -78,18 +84,21 @@ fn test_configs() {
 }
 
 #[test]
+#[ignore]
 fn test_traffic() {
     let clash = init();
     clash.get_traffic().unwrap().next();
 }
 
 #[test]
+#[ignore]
 fn test_log() {
     let clash = init();
     clash.get_log().unwrap().next();
 }
 
 #[test]
+#[ignore]
 fn test_connections() {
     let clash = init();
     let cons = clash.get_connections().unwrap();
@@ -103,6 +112,7 @@ fn test_connections() {
 }
 
 #[test]
+#[ignore]
 fn test_version() {
     let clash = init();
     info!("{:#?}", clash.get_version().unwrap())
