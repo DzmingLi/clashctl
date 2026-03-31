@@ -30,6 +30,8 @@ pub struct SubscriptionConfig {
     pub url_file: Option<PathBuf>,
     #[serde(default)]
     pub user_agent: Option<String>,
+    #[serde(default)]
+    pub override_file: Option<PathBuf>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]

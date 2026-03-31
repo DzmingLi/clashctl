@@ -55,8 +55,12 @@ let
           if cfg.subscription.userAgent != null
           then "user_agent: Some(\"${cfg.subscription.userAgent}\")"
           else "user_agent: None";
+        overridePart =
+          if cfg.subscription.overrides != {}
+          then "override_file: Some(\"${config.home.homeDirectory}/.config/clashctl/overrides.yaml\")"
+          else "override_file: None";
       in
-        "Some((${urlPart}, ${urlFilePart}, ${uaPart}))"
+        "Some((${urlPart}, ${urlFilePart}, ${uaPart}, ${overridePart}))"
     else
       "None";
 
@@ -178,6 +182,25 @@ in {
         description = "Custom User-Agent header for subscription requests";
       };
 
+      overrides = mkOption {
+        type = types.attrs;
+        default = {};
+        description = ''
+          Override subscription config on refresh.
+          - prepend-rules: list prepended to rules (higher priority)
+          - append-rules: list appended to rules
+          - Other keys: deep merged (override wins)
+        '';
+        example = literalExpression ''
+          {
+            mixed-port = 7890;
+            prepend-rules = [
+              "DOMAIN-SUFFIX,openai.com,PROXY"
+            ];
+          }
+        '';
+      };
+
       refreshInterval = mkOption {
         type = types.str;
         default = "*-*-* 0/12:00:00";
@@ -193,6 +216,11 @@ in {
 
       # Generate ~/.config/clashctl/config.ron
       xdg.configFile."clashctl/config.ron".text = configRON;
+
+      # Generate overrides YAML if overrides are set
+      xdg.configFile."clashctl/overrides.yaml" = mkIf (cfg.subscription.overrides != {}) {
+        text = builtins.toJSON cfg.subscription.overrides;
+      };
     }
 
     # Subscription auto-refresh via systemd user timer
