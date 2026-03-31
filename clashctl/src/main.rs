@@ -17,6 +17,7 @@ pub fn run() {
         Some(Cmd::Proxy(sub)) => sub.handle(&opts.flag),
         Some(Cmd::Server(sub)) => sub.handle(&opts.flag),
         Some(Cmd::Completion(arg)) => arg.handle(),
+        Some(Cmd::Subscription(sub)) => sub.handle(&opts.flag),
     } {
         eprintln!("{}", e)
     }

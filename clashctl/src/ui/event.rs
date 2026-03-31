@@ -9,7 +9,13 @@ use tui::{
 };
 
 use crate::{
-    ui::{components::MovableListItem, utils::AsColor, TuiError, TuiResult},
+    ui::{
+        components::MovableListItem,
+        config::get_config,
+        keybind::{match_tab_goto, matches_any},
+        utils::AsColor,
+        TuiError, TuiResult,
+    },
     Action,
 };
 
@@ -81,6 +87,7 @@ pub enum InputEvent {
     TestLatency,
     NextSort,
     PrevSort,
+    RefreshSubscription,
     Other(KE),
 }
 
@@ -101,6 +108,7 @@ pub enum UpdateEvent {
     Rules(Rules),
     Log(Log),
     ProxyTestLatencyDone,
+    SubscriptionRefreshResult(String),
 }
 
 impl Display for UpdateEvent {
@@ -114,6 +122,7 @@ impl Display for UpdateEvent {
             UpdateEvent::Rules(x) => write!(f, "{:?}", x),
             UpdateEvent::Log(x) => write!(f, "{:?}", x),
             UpdateEvent::ProxyTestLatencyDone => write!(f, "Test latency done"),
+            UpdateEvent::SubscriptionRefreshResult(ref msg) => write!(f, "Subscription: {}", msg),
         }
     }
 }
@@ -124,41 +133,49 @@ pub enum DiagnosticEvent {
     Log(Level, String),
 }
 
-impl TryFrom<KC> for Event {
-    type Error = TuiError;
-
-    fn try_from(value: KC) -> TuiResult<Self> {
-        match value {
-            KC::Char('q') | KC::Char('x') => Ok(Event::Quit),
-            KC::Char('t') => Ok(Event::Input(InputEvent::TestLatency)),
-            KC::Esc => Ok(Event::Input(InputEvent::Esc)),
-            KC::Char(' ') => Ok(Event::Input(InputEvent::ToggleHold)),
-            KC::Char(char) if char.is_ascii_digit() => Ok(Event::Input(InputEvent::TabGoto(
-                char.to_digit(10)
-                    .expect("char.is_ascii_digit() should be able to parse into number")
-                    as u8,
-            ))),
-            _ => Err(TuiError::TuiInternalErr),
-        }
-    }
-}
-
 impl From<KE> for Event {
     fn from(value: KE) -> Self {
+        let bindings = &get_config().keybindings;
+
+        // Configurable bindings (checked first)
+        if matches_any(&value, &bindings.quit) {
+            return Self::Quit;
+        }
+        if matches_any(&value, &bindings.toggle_debug) {
+            return Self::Input(InputEvent::ToggleDebug);
+        }
+        if matches_any(&value, &bindings.refresh_subscription) {
+            return Self::Input(InputEvent::RefreshSubscription);
+        }
+        if matches_any(&value, &bindings.test_latency) {
+            return Self::Input(InputEvent::TestLatency);
+        }
+        if matches_any(&value, &bindings.toggle_hold) {
+            return Self::Input(InputEvent::ToggleHold);
+        }
+        if matches_any(&value, &bindings.next_sort) {
+            return Self::Input(InputEvent::NextSort);
+        }
+        if matches_any(&value, &bindings.prev_sort) {
+            return Self::Input(InputEvent::PrevSort);
+        }
+        if let Some(digit) = match_tab_goto(&value, &bindings.tab_goto) {
+            return Self::Input(InputEvent::TabGoto(digit));
+        }
+
+        // Esc is always esc (not worth making configurable)
+        if value.code == KC::Esc {
+            return Self::Input(InputEvent::Esc);
+        }
+
+        // Arrow key navigation stays hardcoded
         match (value.modifiers, value.code) {
-            (KM::CONTROL, KC::Char('c')) => Self::Quit,
-            (KM::CONTROL, KC::Char('d')) => Self::Input(InputEvent::ToggleDebug),
             (modi, arrow @ (KC::Left | KC::Right | KC::Up | KC::Down | KC::Enter)) => {
                 Event::Input(InputEvent::List(ListEvent {
                     fast: matches!(modi, KM::CONTROL | KM::SHIFT),
                     code: arrow,
                 }))
             }
-            (KM::ALT, KC::Char('s')) => Self::Input(InputEvent::PrevSort),
-            (KM::NONE, KC::Char('s')) => Self::Input(InputEvent::NextSort),
-            (KM::NONE, key_code) => key_code
-                .try_into()
-                .unwrap_or(Self::Input(InputEvent::Other(value))),
             _ => Self::Input(InputEvent::Other(value)),
         }
     }

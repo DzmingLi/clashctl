@@ -131,6 +131,9 @@ impl<'a> TuiStates<'a> {
             UpdateEvent::ProxyTestLatencyDone => {
                 self.proxy_tree.end_testing();
             }
+            UpdateEvent::SubscriptionRefreshResult(_) => {
+                // Result is logged to debug panel via event capture
+            }
         }
         Ok(None)
     }
@@ -188,6 +191,9 @@ impl<'a> TuiStates<'a> {
                 if let Some(mut list) = self.active_list() {
                     list.prev_sort();
                 }
+            }
+            InputEvent::RefreshSubscription => {
+                return Ok(Some(Action::RefreshSubscription));
             }
             InputEvent::Other(_) => {} // InterfaceEvent::Other(event) => self.handle_list(event),
         }

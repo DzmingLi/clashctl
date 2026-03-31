@@ -11,6 +11,9 @@ pub enum ErrorKind {
 
     #[error("Requestty error")]
     RequesttyError(#[from] requestty::ErrorKind),
+
+    #[error("{0}")]
+    Custom(String),
 }
 #[derive(Debug, thiserror::Error)]
 #[error(transparent)]
@@ -22,6 +25,12 @@ where
 {
     fn from(err: E) -> Self {
         Error(Box::new(ErrorKind::from(err)))
+    }
+}
+
+impl Error {
+    pub fn custom(msg: String) -> Self {
+        Error(Box::new(ErrorKind::Custom(msg)))
     }
 }
 

@@ -1,4 +1,5 @@
 pub mod components;
+pub mod keybind;
 pub mod pages;
 
 mod_use::mod_use![

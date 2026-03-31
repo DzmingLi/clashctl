@@ -171,6 +171,34 @@ fn action_job(
                     .map_err(|e| warn!("{:?}", e));
                 tx.send(Event::Update(UpdateEvent::Proxies(clash.get_proxies()?)))?;
             }
+            Action::RefreshSubscription => {
+                use crate::interactive::subscription::refresh_subscription;
+                use crate::ui::config::get_config;
+
+                let config = get_config();
+                match &config.tui.subscription {
+                    Some(sub_config) => {
+                        match refresh_subscription(sub_config) {
+                            Ok(()) => {
+                                let msg = "Subscription refreshed successfully".to_string();
+                                let _ = tx.send(Event::Update(UpdateEvent::SubscriptionRefreshResult(msg)));
+                                let path = crate::interactive::subscription::mihomo_config_path();
+                                let _ = clash.reload_configs(false, &path.to_string_lossy())
+                                    .map_err(|e| warn!("Failed to reload configs: {:?}", e));
+                            }
+                            Err(e) => {
+                                let msg = format!("Refresh failed: {}", e);
+                                warn!("{}", msg);
+                                let _ = tx.send(Event::Update(UpdateEvent::SubscriptionRefreshResult(msg)));
+                            }
+                        }
+                    }
+                    None => {
+                        let msg = "No subscription configured".to_string();
+                        let _ = tx.send(Event::Update(UpdateEvent::SubscriptionRefreshResult(msg)));
+                    }
+                }
+            }
         }
     }
     Ok(())

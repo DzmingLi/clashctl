@@ -3,7 +3,7 @@ use log::LevelFilter;
 
 use crate::{interactive::Flags, ui::TuiOpt, utils::init_logger};
 
-mod_use::mod_use!(completion, proxy, server);
+mod_use::mod_use!(completion, proxy, server, subscription);
 
 #[derive(Parser, Debug)]
 #[clap(
@@ -30,6 +30,8 @@ pub enum Cmd {
     Server(ServerSubcommand),
     #[clap(alias = "comp")]
     Completion(CompletionArg),
+    #[clap(subcommand, alias = "sub")]
+    Subscription(SubscriptionSubcommand),
 }
 
 impl Opts {

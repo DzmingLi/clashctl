@@ -167,6 +167,7 @@ impl DerefMut for Config {
 }
 
 #[test]
+#[ignore] // requires PROXY_ADDR env var
 fn test_config() {
     use std::env;
 

@@ -43,6 +43,7 @@ rayon         = { version = "1.5.3" }
 
 clashctl-core = { path = "../clashctl-core", features = ["full"] }
 tap           = "1.0.1"
+ureq          = { version = "~2.3", default-features = false }
 
 [dev-dependencies]
 rand              = { version = "0.8.5", features = ["small_rng"] }
