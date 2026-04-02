@@ -74,9 +74,9 @@ let
             subscription: ${subscriptionRON},
         ),
         sort: (
-            connections: Name,
-            rules: Name,
-            proxies: Name,
+            connections: (by: time, order: descendant),
+            rules: (by: payload, order: descendant),
+            proxies: (by: delay, order: ascendant),
         ),
         keybindings: (
             ${keybindingsToRON mergedKeybindings}
