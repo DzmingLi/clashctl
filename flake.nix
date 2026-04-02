@@ -17,12 +17,16 @@
         pkgs = nixpkgs.legacyPackages.${system};
         craneLib = crane.mkLib pkgs;
         cargoArtifacts = craneLib.buildDepsOnly {
+          pname = "clashctl";
+          version = "0.3.6";
           src = ./.;
           nativeBuildInputs = [ pkgs.pkg-config ];
           buildInputs = [ pkgs.openssl ];
         };
       in {
         default = craneLib.buildPackage {
+          pname = "clashctl";
+          version = "0.3.6";
           inherit cargoArtifacts;
           src = ./.;
           nativeBuildInputs = [ pkgs.pkg-config ];
