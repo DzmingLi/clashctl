@@ -145,7 +145,7 @@ in {
 
     using = mkOption {
       type = types.nullOr types.str;
-      default = null;
+      default = "http://127.0.0.1:9090";
       description = "URL of the active server";
     };
 
