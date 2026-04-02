@@ -63,7 +63,6 @@ impl ServerSubcommand {
                 config.servers.push(server);
                 debug!("{:#?}", config.servers);
                 config.use_server(url)?;
-                config.write()?;
             }
             Self::Use => {
                 if config.servers.is_empty() {
@@ -79,7 +78,6 @@ impl ServerSubcommand {
                 )?;
                 let ans_str = &ans.as_list_item().unwrap().text;
                 config.use_server(Url::parse(ans_str).unwrap())?;
-                config.write()?;
             }
             Self::List => {
                 if config.servers.is_empty() {
@@ -151,7 +149,6 @@ impl ServerSubcommand {
                     }
                 }
                 debug!("{:#?}", config.servers);
-                config.write()?;
             }
         }
         Ok(())

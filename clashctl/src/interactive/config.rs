@@ -1,7 +1,7 @@
 use std::{
     fmt::Display,
-    fs::{File, OpenOptions},
-    io::{Read, Seek, SeekFrom, Write},
+    fs::OpenOptions,
+    io::Read,
     ops::{Deref, DerefMut},
     path::Path,
     time::Duration,
@@ -9,7 +9,7 @@ use std::{
 
 use clashctl_core::{Clash, ClashBuilder};
 use log::{debug, info};
-use ron::{from_str, ser::PrettyConfig};
+use ron::from_str;
 use serde::{Deserialize, Serialize};
 use url::Url;
 
@@ -60,7 +60,6 @@ impl TryInto<ClashBuilder> for Server {
 #[derive(Debug)]
 pub struct Config {
     inner: ConfigData,
-    file: File,
 }
 
 // TODO: use config crate
@@ -70,66 +69,35 @@ impl Config {
 
         debug!("Open config file @ {}", path.display());
 
-        let mut this = if !path.exists() {
-            info!("Config file not exist, creating new one");
-            Self {
+        if !path.exists() {
+            info!("Config file not exist, using defaults");
+            return Ok(Self {
                 inner: ConfigData::default(),
-                file: File::create(path).map_err(InteractiveError::ConfigFileIoError)?,
-            }
-        } else {
-            debug!("Reading and parsing config file");
+            });
+        }
 
-            let mut file = OpenOptions::new()
-                .read(true)
-                .open(path)
-                .map_err(InteractiveError::ConfigFileIoError)?;
+        debug!("Reading and parsing config file");
 
-            let mut buf = match file.metadata() {
-                Ok(meta) => String::with_capacity(meta.len() as usize),
-                Err(_) => String::new(),
-            };
+        let mut file = OpenOptions::new()
+            .read(true)
+            .open(path)
+            .map_err(InteractiveError::ConfigFileIoError)?;
 
-            file.read_to_string(&mut buf)
-                .map_err(InteractiveError::ConfigFileIoError)?;
-
-            debug!("Raw config:\n{}", buf);
-
-            let inner = from_str(&buf)?;
-
-            drop(file);
-
-            debug!("Content read");
-
-            // If the path is a symlink (e.g. managed by home-manager pointing into the Nix
-            // store), remove it so we can create a writable file in its place.
-            if path.is_symlink() {
-                std::fs::remove_file(path).map_err(InteractiveError::ConfigFileIoError)?;
-            }
-
-            let file = File::create(path).map_err(InteractiveError::ConfigFileIoError)?;
-
-            Self { inner, file }
+        let mut buf = match file.metadata() {
+            Ok(meta) => String::with_capacity(meta.len() as usize),
+            Err(_) => String::new(),
         };
 
-        this.write()?;
-        Ok(this)
-    }
-
-    pub fn write(&mut self) -> InteractiveResult<()> {
-        let pretty_config = PrettyConfig::default().indentor("  ".to_owned());
-
-        // Reset the file - Move cursor to 0 and truncate to 0
-        self.file
-            .seek(SeekFrom::Start(0))
-            .and_then(|_| self.file.set_len(0))
+        file.read_to_string(&mut buf)
             .map_err(InteractiveError::ConfigFileIoError)?;
 
-        ron::ser::to_writer_pretty(&mut self.file, &self.inner, pretty_config)?;
-        self.file
-            .flush()
-            .map_err(InteractiveError::ConfigFileIoError)?;
+        debug!("Raw config:\n{}", buf);
 
-        Ok(())
+        let inner = from_str(&buf)?;
+
+        debug!("Content read");
+
+        Ok(Self { inner })
     }
 
     pub fn using_server(&self) -> Option<&Server> {
@@ -182,10 +150,8 @@ fn test_config() {
         .init();
 
     let mut config = Config::from_dir("/tmp/test.ron").unwrap();
-    config.write().unwrap();
     config.servers.push(Server {
         url: url::Url::parse(&env::var("PROXY_ADDR").unwrap()).unwrap(),
         secret: None,
     });
-    config.write().unwrap();
 }

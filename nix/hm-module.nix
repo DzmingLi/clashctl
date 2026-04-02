@@ -1,4 +1,4 @@
-{ config, lib, pkgs, ... }:
+{ config, lib, ... }:
 
 let
   cfg = config.programs.clashctl;
@@ -214,18 +214,7 @@ in {
     {
       home.packages = [ cfg.package ];
 
-      # Copy config.ron from Nix store only if missing or still a symlink.
-      # config.ron is mutable runtime state (clashctl writes back to it), so we
-      # must not manage it as a symlink into the read-only Nix store.
-      home.activation.clashctlConfig = lib.hm.dag.entryAfter ["writeBoundary"] ''
-        _clashctl_config="${config.home.homeDirectory}/.config/clashctl/config.ron"
-        _clashctl_template=${pkgs.writeText "clashctl-config.ron" configRON}
-        if [ ! -e "$_clashctl_config" ] || [ -L "$_clashctl_config" ]; then
-          $DRY_RUN_CMD mkdir -p "$(dirname "$_clashctl_config")"
-          $DRY_RUN_CMD cp "$_clashctl_template" "$_clashctl_config"
-          $DRY_RUN_CMD chmod 644 "$_clashctl_config"
-        fi
-      '';
+      xdg.configFile."clashctl/config.ron".text = configRON;
 
       # Generate overrides YAML if overrides are set
       xdg.configFile."clashctl/overrides.yaml" = mkIf (cfg.subscription.overrides != {}) {
