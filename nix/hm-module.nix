@@ -220,11 +220,10 @@ in {
       home.activation.clashctlConfig = lib.hm.dag.entryAfter ["writeBoundary"] ''
         _clashctl_config="${config.home.homeDirectory}/.config/clashctl/config.ron"
         _clashctl_template=${pkgs.writeText "clashctl-config.ron" configRON}
-        if [ ! -e "$_clashctl_config" ] || [ -L "$_clashctl_config" ]; then
-          $DRY_RUN_CMD mkdir -p "$(dirname "$_clashctl_config")"
-          $DRY_RUN_CMD cp "$_clashctl_template" "$_clashctl_config"
-          $DRY_RUN_CMD chmod 644 "$_clashctl_config"
-        fi
+        $DRY_RUN_CMD mkdir -p "$(dirname "$_clashctl_config")"
+        $DRY_RUN_CMD rm -f "$_clashctl_config"
+        $DRY_RUN_CMD cp "$_clashctl_template" "$_clashctl_config"
+        $DRY_RUN_CMD chmod 644 "$_clashctl_config"
       '';
 
       # Generate overrides YAML if overrides are set
