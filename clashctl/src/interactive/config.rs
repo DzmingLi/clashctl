@@ -100,6 +100,12 @@ impl Config {
 
             debug!("Content read");
 
+            // If the path is a symlink (e.g. managed by home-manager pointing into the Nix
+            // store), remove it so we can create a writable file in its place.
+            if path.is_symlink() {
+                std::fs::remove_file(path).map_err(InteractiveError::ConfigFileIoError)?;
+            }
+
             let file = File::create(path).map_err(InteractiveError::ConfigFileIoError)?;
 
             Self { inner, file }
