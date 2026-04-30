@@ -83,9 +83,9 @@ fn deep_merge(base: &mut Value, override_val: Value) {
 
 /// Apply overrides to downloaded subscription config.
 ///
-/// Special keys in overrides:
-/// - `prepend-rules`: prepended to `rules` (higher priority)
-/// - `append-rules`: appended to `rules`
+/// Special keys in overrides (for each `<target>` in `rules`, `proxies`, `proxy-groups`):
+/// - `prepend-<target>`: prepended to `<target>` (higher priority)
+/// - `append-<target>`: appended to `<target>`
 /// - All other keys: deep merged (override wins)
 fn apply_overrides(base_yaml: &str, override_file: &Path) -> Result<String, SubscriptionError> {
     let mut base: Value = serde_yaml::from_str(base_yaml)?;
@@ -96,37 +96,48 @@ fn apply_overrides(base_yaml: &str, override_file: &Path) -> Result<String, Subs
         None => return Ok(base_yaml.to_string()),
     };
 
-    // Extract special rule keys before merging
-    let prepend_rules = overrides_map
-        .remove(&Value::String("prepend-rules".into()))
-        .and_then(|v| v.as_sequence().cloned());
-    let append_rules = overrides_map
-        .remove(&Value::String("append-rules".into()))
-        .and_then(|v| v.as_sequence().cloned());
+    // Extract prepend-/append- pairs for each mergeable list target before deep merging,
+    // so they don't end up as bogus top-level keys in the final YAML.
+    let merge_targets = ["rules", "proxies", "proxy-groups"];
+    let extracted: Vec<(&str, Option<Vec<Value>>, Option<Vec<Value>>)> = merge_targets
+        .iter()
+        .map(|target| {
+            let prepend = overrides_map
+                .remove(&Value::String(format!("prepend-{target}")))
+                .and_then(|v| v.as_sequence().cloned());
+            let append = overrides_map
+                .remove(&Value::String(format!("append-{target}")))
+                .and_then(|v| v.as_sequence().cloned());
+            (*target, prepend, append)
+        })
+        .collect();
 
     // Deep merge remaining overrides
     deep_merge(&mut base, overrides);
 
-    // Handle rules: prepend + original + append
-    if prepend_rules.is_some() || append_rules.is_some() {
+    // For each mergeable target, splice prepend + existing + append back into base.
+    for (target, prepend, append) in extracted {
+        if prepend.is_none() && append.is_none() {
+            continue;
+        }
         let base_map = base.as_mapping_mut().unwrap();
-        let rules_key = Value::String("rules".into());
+        let key = Value::String(target.into());
 
-        let existing_rules = base_map
-            .remove(&rules_key)
+        let existing = base_map
+            .remove(&key)
             .and_then(|v| v.as_sequence().cloned())
             .unwrap_or_default();
 
-        let mut final_rules = Vec::new();
-        if let Some(prepend) = prepend_rules {
-            final_rules.extend(prepend);
+        let mut final_seq = Vec::new();
+        if let Some(prepend) = prepend {
+            final_seq.extend(prepend);
         }
-        final_rules.extend(existing_rules);
-        if let Some(append) = append_rules {
-            final_rules.extend(append);
+        final_seq.extend(existing);
+        if let Some(append) = append {
+            final_seq.extend(append);
         }
 
-        base_map.insert(rules_key, Value::Sequence(final_rules));
+        base_map.insert(key, Value::Sequence(final_seq));
     }
 
     Ok(serde_yaml::to_string(&base)?)
